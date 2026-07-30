@@ -1,0 +1,9 @@
+{
+  "name": "iron-horse-express",
+  "scripts": {
+    "start": "bun run index.ts"
+  },
+  "dependencies": {
+    "hono": "^4.6.0"
+  }
+}
