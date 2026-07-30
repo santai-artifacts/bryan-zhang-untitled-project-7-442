@@ -1,10 +1,15 @@
 import { Hono } from 'hono'
-import Database from 'bun:sqlite'
-import { mkdirSync } from 'fs'
+import { serve } from '@hono/node-server'
+import { DatabaseSync } from 'node:sqlite'
+import { mkdirSync, existsSync, readFileSync } from 'fs'
+import { fileURLToPath } from 'url'
+import { dirname, join } from 'path'
 
-try { mkdirSync('./data', { recursive: true }) } catch {}
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
-const db = new Database(process.env.DATABASE_URL || './data/app.db')
+mkdirSync(join(__dirname, 'data'), { recursive: true })
+
+const db = new DatabaseSync(process.env.DATABASE_URL || join(__dirname, 'data/app.db'))
 db.exec(`
   CREATE TABLE IF NOT EXISTS journeys (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -14,7 +19,7 @@ db.exec(`
   )
 `)
 
-const { count } = db.query<{ count: number }, []>('SELECT COUNT(*) as count FROM journeys').get()!
+const { count } = db.prepare('SELECT COUNT(*) as count FROM journeys').get()
 if (count === 0) {
   db.exec(`
     INSERT INTO journeys (distance, passengers) VALUES (287.4, 143);
@@ -28,25 +33,20 @@ if (count === 0) {
 const app = new Hono()
 
 app.get('/api/stats', (c) => {
-  const stats = db.query<{
-    total_journeys: number
-    total_distance: number
-    total_passengers: number
-    longest_journey: number
-  }, []>(`
+  const stats = db.prepare(`
     SELECT
       COUNT(*) as total_journeys,
       ROUND(COALESCE(SUM(distance), 0), 1) as total_distance,
       COALESCE(SUM(passengers), 0) as total_passengers,
       ROUND(COALESCE(MAX(distance), 0), 1) as longest_journey
     FROM journeys
-  `).get()!
+  `).get()
   return c.json(stats)
 })
 
 app.post('/api/journey', async (c) => {
-  const { distance, passengers } = await c.req.json<{ distance: number; passengers: number }>()
-  db.query('INSERT INTO journeys (distance, passengers) VALUES (?, ?)').run(
+  const { distance, passengers } = await c.req.json()
+  db.prepare('INSERT INTO journeys (distance, passengers) VALUES (?, ?)').run(
     Math.round(distance * 10) / 10,
     passengers
   )
@@ -54,7 +54,11 @@ app.post('/api/journey', async (c) => {
 })
 
 app.get('/', (c) => {
-  return new Response(Bun.file(`${import.meta.dir}/public/index.html`))
+  const html = readFileSync(join(__dirname, 'public/index.html'), 'utf-8')
+  return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } })
 })
 
-export default { port: process.env.PORT || 3000, fetch: app.fetch }
+const port = parseInt(process.env.PORT || '3000')
+serve({ fetch: app.fetch, port, hostname: '0.0.0.0' }, () => {
+  console.log(`Iron Horse Express running on port ${port}`)
+})

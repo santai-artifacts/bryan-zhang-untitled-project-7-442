@@ -1,9 +1,10 @@
 {
   "name": "iron-horse-express",
   "scripts": {
-    "start": "bun run index.ts"
+    "start": "node --experimental-sqlite index.mjs"
   },
   "dependencies": {
+    "@hono/node-server": "^2.0.12",
     "hono": "^4.6.0"
   }
 }

@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Iron Horse Express</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0d1117;
+    overflow: hidden;
+    font-family: 'Crimson Pro', serif;
+    user-select: none;
+  }
+
+  #scene {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  #ui {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 24px 20px;
+    pointer-events: none;
+    gap: 16px;
+  }
+
+  .panel {
+    background: rgba(8, 5, 2, 0.78);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(212, 160, 23, 0.25);
+    border-radius: 12px;
+    padding: 16px 20px;
+    pointer-events: all;
+    min-width: 180px;
+  }
+
+  .panel-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #d4a017;
+    margin-bottom: 12px;
+    opacity: 0.9;
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+    gap: 16px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    white-space: nowrap;
+  }
+
+  .stat-value {
+    font-size: 15px;
+    font-weight: 600;
+    color: #f0e6c8;
+  }
+
+  .controls-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .control-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .control-label {
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    white-space: nowrap;
+    width: 52px;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 130px;
+    height: 4px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    background: #d4a017;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 6px rgba(212,160,23,0.6);
+  }
+
+  .speed-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: #d4a017;
+    width: 24px;
+    text-align: right;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid rgba(212,160,23,0.3);
+    background: rgba(212,160,23,0.1);
+    color: #d4a017;
+    border-radius: 7px;
+    font-family: 'Crimson Pro', serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.04em;
+  }
+
+  .btn:hover {
+    background: rgba(212,160,23,0.22);
+    border-color: rgba(212,160,23,0.6);
+  }
+
+  .btn:active {
+    background: rgba(212,160,23,0.35);
+    transform: scale(0.97);
+  }
+
+  .btn.active {
+    background: rgba(212,160,23,0.3);
+    border-color: rgba(212,160,23,0.7);
+    box-shadow: 0 0 8px rgba(212,160,23,0.3);
+  }
+
+  #title-overlay {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    pointer-events: none;
+  }
+
+  #title-overlay h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(18px, 3vw, 32px);
+    font-weight: 900;
+    color: #f0e6c8;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-shadow: 0 2px 20px rgba(0,0,0,0.8), 0 0 40px rgba(212,160,23,0.2);
+  }
+
+  #title-overlay p {
+    font-size: clamp(11px, 1.4vw, 14px);
+    color: rgba(240,230,200,0.5);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-top: 4px;
+    font-style: italic;
+  }
+
+  #whistle-flash {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(255,255,255,0);
+    pointer-events: none;
+    transition: background 0.05s;
+  }
+
+  #current-speed {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    text-align: right;
+    pointer-events: none;
+  }
+
+  #current-speed .mph {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(28px, 5vw, 52px);
+    font-weight: 700;
+    color: #f0e6c8;
+    line-height: 1;
+    text-shadow: 0 0 30px rgba(212,160,23,0.3);
+  }
+
+  #current-speed .mph-label {
+    font-size: 12px;
+    color: rgba(240,230,200,0.4);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="scene"></canvas>
+
+<div id="whistle-flash"></div>
+
+<div id="title-overlay">
+  <h1>Iron Horse Express</h1>
+  <p>Est. 1869 &mdash; The Great Transcontinental</p>
+</div>
+
+<div id="current-speed">
+  <div class="mph" id="mph-display">45</div>
+  <div class="mph-label">mph</div>
+</div>
+
+<div id="ui">
+  <div class="panel">
+    <div class="panel-title">Journey Log</div>
+    <div class="stat-row">
+      <span class="stat-label">Total runs</span>
+      <span class="stat-value" id="stat-journeys">—</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">Miles traveled</span>
+      <span class="stat-value" id="stat-distance">—</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">Passengers</span>
+      <span class="stat-value" id="stat-passengers">—</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">Longest run</span>
+      <span class="stat-value" id="stat-longest">—</span>
+    </div>
+    <div class="stat-row" style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(212,160,23,0.15)">
+      <span class="stat-label">This journey</span>
+      <span class="stat-value" id="stat-current">0 mi</span>
+    </div>
+  </div>
+
+  <div class="panel controls-panel">
+    <div class="panel-title">Throttle Control</div>
+    <div class="control-row">
+      <span class="control-label">Speed</span>
+      <input type="range" id="speed-slider" min="0" max="10" step="0.5" value="3">
+      <span class="speed-value" id="speed-display">3</span>
+    </div>
+    <div class="btn-row">
+      <button class="btn" id="btn-whistle">🎺 Whistle</button>
+      <button class="btn" id="btn-night">🌙 Night</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn" id="btn-stop">⏹ Stop</button>
+      <button class="btn" id="btn-full">⚡ Full</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+//  State
+// ─────────────────────────────────────────────
+const canvas = document.getElementById('scene');
+const ctx = canvas.getContext('2d');
+
+let W, H, groundY, horizonY;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  groundY = H * 0.74;
+  horizonY = H * 0.48;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ─────────────────────────────────────────────
+//  Parameters
+// ─────────────────────────────────────────────
+let speed = 3;          // 0-10
+let isNight = false;
+let whistling = false;
+let whistleTimer = 0;
+let scrollOffset = 0;
+let wheelAngle = 0;
+let journeyMiles = 0;
+let particles = [];     // smoke
+let steamParticles = [] // steam puffs
+let emberParticles = [] // sparks
+
+// Trees, clouds, birds state
+let trees = [];
+let clouds = [];
+let birds = [];
+
+// Day/night blend (0=day, 1=night)
+let dnBlend = 0;
+let targetDN = 0;
+
+function init() {
+  // Spawn initial trees
+  for (let i = 0; i < 30; i++) {
+    trees.push(makeTree(Math.random() * W * 3));
+  }
+  for (let i = 0; i < 8; i++) {
+    clouds.push(makeCloud(Math.random() * W));
+  }
+  for (let i = 0; i < 5; i++) {
+    birds.push(makeBird(Math.random() * W, horizonY * 0.5 + Math.random() * horizonY * 0.3));
+  }
+}
+
+function makeTree(x) {
+  const layer = Math.random() < 0.4 ? 1 : 2; // 1=far, 2=near
+  const h = layer === 1 ? 40 + Math.random() * 30 : 70 + Math.random() * 50;
+  return { x, h, layer, type: Math.random() < 0.6 ? 'pine' : 'round' };
+}
+
+function makeCloud(x) {
+  return {
+    x,
+    y: horizonY * 0.15 + Math.random() * horizonY * 0.45,
+    scale: 0.6 + Math.random() * 1.2,
+    speed: 0.08 + Math.random() * 0.12
+  };
+}
+
+function makeBird(x, y) {
+  return { x, y, phase: Math.random() * Math.PI * 2, speed: 0.6 + Math.random() * 0.4 };
+}
+
+// ─────────────────────────────────────────────
+//  Drawing helpers
+// ─────────────────────────────────────────────
+function lerp(a, b, t) { return a + (b - a) * t; }
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+function lerpColor(c1, c2, t) {
+  const r1=parseInt(c1.slice(1,3),16), g1=parseInt(c1.slice(3,5),16), b1=parseInt(c1.slice(5,7),16);
+  const r2=parseInt(c2.slice(1,3),16), g2=parseInt(c2.slice(3,5),16), b2=parseInt(c2.slice(5,7),16);
+  const r=Math.round(lerp(r1,r2,t)).toString(16).padStart(2,'0');
+  const g=Math.round(lerp(g1,g2,t)).toString(16).padStart(2,'0');
+  const b=Math.round(lerp(b1,b2,t)).toString(16).padStart(2,'0');
+  return `#${r}${g}${b}`;
+}
+
+// ─────────────────────────────────────────────
+//  Sky & Background
+// ─────────────────────────────────────────────
+function drawSky() {
+  const skyTop = isNight ? '#05080f' : '#1a4a7a';
+  const skyMid = isNight ? '#0d1a2e' : '#3a7ab5';
+  const skyHorizon = isNight ? '#1a2a40' : '#c8e8f5';
+
+  const top = lerpColor(skyTop, isNight ? '#030508' : '#0d2a4e', dnBlend > 0 ? 0 : 0);
+  const grd = ctx.createLinearGradient(0, 0, 0, horizonY);
+  grd.addColorStop(0, lerpColor('#1a4a7a', '#05080f', dnBlend));
+  grd.addColorStop(0.5, lerpColor('#3a7ab5', '#0d1a2e', dnBlend));
+  grd.addColorStop(1, lerpColor('#c8e8f5', '#1a2a40', dnBlend));
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, W, horizonY + 2);
+}
+
+function drawStars() {
+  if (dnBlend < 0.1) return;
+  ctx.save();
+  ctx.globalAlpha = dnBlend * 0.9;
+  // Use deterministic pseudo-random for stars
+  const seed = 42;
+  for (let i = 0; i < 200; i++) {
+    const sx = (Math.sin(i * 127.1) * 0.5 + 0.5) * W;
+    const sy = (Math.sin(i * 311.7) * 0.5 + 0.5) * horizonY * 0.92;
+    const r = 0.4 + (Math.sin(i * 53.3) * 0.5 + 0.5) * 1.2;
+    const twinkle = 0.6 + 0.4 * Math.sin(Date.now() * 0.001 + i * 0.7);
+    ctx.globalAlpha = dnBlend * twinkle * 0.85;
+    ctx.beginPath();
+    ctx.arc(sx, sy, r, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawSun(t) {
+  if (dnBlend > 0.85) {
+    // Moon
+    const mx = W * 0.82, my = horizonY * 0.22;
+    ctx.save();
+    ctx.globalAlpha = dnBlend;
+    // Glow
+    const glow = ctx.createRadialGradient(mx, my, 10, mx, my, 60);
+    glow.addColorStop(0, 'rgba(200,220,255,0.25)');
+    glow.addColorStop(1, 'rgba(200,220,255,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.arc(mx, my, 60, 0, Math.PI*2); ctx.fill();
+    // Moon body
+    ctx.beginPath(); ctx.arc(mx, my, 22, 0, Math.PI*2);
+    ctx.fillStyle = '#d8e8f8'; ctx.fill();
+    // Crescent shadow
+    ctx.beginPath(); ctx.arc(mx + 10, my - 5, 18, 0, Math.PI*2);
+    ctx.fillStyle = lerpColor('#0d1a2e', '#05080f', 0.5); ctx.fill();
+    ctx.restore();
+  } else {
+    // Sun
+    const sx = W * 0.78, sy = horizonY * 0.18;
+    ctx.save();
+    ctx.globalAlpha = 1 - dnBlend;
+    const sunGlow = ctx.createRadialGradient(sx, sy, 16, sx, sy, 80);
+    sunGlow.addColorStop(0, 'rgba(255,240,150,0.6)');
+    sunGlow.addColorStop(0.5, 'rgba(255,200,80,0.2)');
+    sunGlow.addColorStop(1, 'rgba(255,200,80,0)');
+    ctx.fillStyle = sunGlow;
+    ctx.beginPath(); ctx.arc(sx, sy, 80, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(sx, sy, 28, 0, Math.PI*2);
+    const sg = ctx.createRadialGradient(sx-5, sy-5, 0, sx, sy, 28);
+    sg.addColorStop(0, '#fffde0');
+    sg.addColorStop(1, '#ffd040');
+    ctx.fillStyle = sg; ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawMountains() {
+  // Far mountains
+  ctx.save();
+  const offset = (scrollOffset * 0.04) % (W * 2);
+  const mtColor = lerpColor('#8aaabb', '#2a3a4a', dnBlend);
+  ctx.fillStyle = mtColor;
+  ctx.beginPath();
+  ctx.moveTo(-offset, horizonY);
+  // Generate a mountain silhouette
+  const pts = [
+    [0,0.7],[0.12,0.2],[0.2,0.45],[0.3,0.05],[0.42,0.38],[0.5,0.1],[0.6,0.35],[0.72,0.15],
+    [0.82,0.3],[0.92,0.08],[1.0,0.42],[1.1,0.2],[1.2,0.55],[1.3,0.12],[1.45,0.35],
+    [1.55,0.18],[1.7,0.08],[1.8,0.4],[1.9,0.22],[2.0,0.55]
+  ];
+  const mw = W * 2;
+  for (const [px, py] of pts) {
+    ctx.lineTo(px * mw - offset, horizonY - py * (horizonY * 0.45));
+  }
+  ctx.lineTo(mw * 2, horizonY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Mountain snow caps
+  ctx.fillStyle = lerpColor('#ffffff', '#9ab0c0', dnBlend);
+  ctx.globalAlpha = lerpColor('#ff','cc','0') ? 0 : 0;
+  ctx.globalAlpha = 0.85 * (1 - dnBlend * 0.7);
+  const snowPts = [
+    [0.3,0.05],[0.5,0.1],[0.72,0.15],[0.92,0.08],[1.3,0.12],[1.7,0.08]
+  ];
+  for (const [px, py] of snowPts) {
+    const mx2 = px * mw - offset;
+    const my2 = horizonY - py * (horizonY * 0.45);
+    ctx.beginPath();
+    ctx.moveTo(mx2, my2);
+    ctx.lineTo(mx2 - 18, my2 + 25);
+    ctx.lineTo(mx2 + 18, my2 + 25);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawHills() {
+  const offset = (scrollOffset * 0.15) % (W * 1.5);
+  const hillColor = lerpColor('#3d7a3d', '#1a2d1a', dnBlend);
+  ctx.fillStyle = hillColor;
+  ctx.beginPath();
+  ctx.moveTo(-offset, groundY + 10);
+  const hw = W * 1.5;
+  const hpts = [
+    [0,1],[0.1,0.55],[0.25,0.8],[0.4,0.4],[0.55,0.7],[0.7,0.35],[0.85,0.65],
+    [1.0,0.45],[1.15,0.7],[1.3,0.38],[1.45,0.62],[1.6,0.42],[1.75,0.72],[1.9,0.5],[2.0,0.78],[2.1,1]
+  ];
+  for (const [px, py] of hpts) {
+    ctx.lineTo(px * hw - offset, groundY - py * (groundY - horizonY) * 0.55);
+  }
+  ctx.lineTo(hw * 2, groundY + 10);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawGround() {
+  // Ground band
+  const gc = ctx.createLinearGradient(0, groundY, 0, H);
+  gc.addColorStop(0, lerpColor('#4a7a35', '#1e2e14', dnBlend));
+  gc.addColorStop(0.08, lerpColor('#5a6a30', '#222a12', dnBlend));
+  gc.addColorStop(0.18, lerpColor('#6b5a32', '#2a2010', dnBlend));
+  gc.addColorStop(1, lerpColor('#4a3a22', '#181208', dnBlend));
+  ctx.fillStyle = gc;
+  ctx.fillRect(0, groundY, W, H - groundY);
+
+  // Grass edge
+  ctx.fillStyle = lerpColor('#5ab040', '#2a4a20', dnBlend);
+  ctx.beginPath();
+  ctx.ellipse(W * 0.5, groundY, W * 0.6, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// ─────────────────────────────────────────────
+//  Trees
+// ─────────────────────────────────────────────
+function drawTree(tree) {
+  const scroll = scrollOffset * (tree.layer === 1 ? 0.3 : 0.85);
+  const tx = ((tree.x - scroll) % (W * 3) + W * 3) % (W * 3) - W * 0.5;
+  if (tx < -100 || tx > W + 100) return;
+
+  const groundLine = tree.layer === 1
+    ? groundY - (groundY - horizonY) * 0.22
+    : groundY;
+
+  const alpha = tree.layer === 1 ? 0.7 : 1.0;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  if (tree.type === 'pine') {
+    const col = lerpColor(tree.layer === 1 ? '#2a5a30' : '#1e4a24', '#0f2010', dnBlend);
+    ctx.fillStyle = col;
+    // Pine tiers
+    for (let t = 0; t < 3; t++) {
+      const tw = tree.h * (0.55 - t * 0.12);
+      const ty = groundLine - tree.h * (0.35 + t * 0.28);
+      ctx.beginPath();
+      ctx.moveTo(tx, ty - tree.h * 0.28);
+      ctx.lineTo(tx - tw, ty);
+      ctx.lineTo(tx + tw, ty);
+      ctx.closePath();
+      ctx.fill();
+    }
+    // Trunk
+    ctx.fillStyle = lerpColor('#5a3a20', '#2a1a0a', dnBlend);
+    ctx.fillRect(tx - 4, groundLine - tree.h * 0.3, 8, tree.h * 0.3);
+  } else {
+    // Round tree
+    const col = lerpColor(tree.layer === 1 ? '#3a7030' : '#285a22', '#102010', dnBlend);
+    ctx.fillStyle = lerpColor('#5a3a20', '#2a1a0a', dnBlend);
+    ctx.fillRect(tx - 5, groundLine - tree.h * 0.45, 10, tree.h * 0.45);
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.arc(tx, groundLine - tree.h * 0.6, tree.h * 0.42, 0, Math.PI * 2);
+    ctx.fill();
+    // Highlight
+    ctx.fillStyle = lerpColor('#4a9040', '#1a3a18', dnBlend);
+    ctx.globalAlpha *= 0.5;
+    ctx.beginPath();
+    ctx.arc(tx - tree.h * 0.1, groundLine - tree.h * 0.7, tree.h * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ─────────────────────────────────────────────
+//  Clouds
+// ─────────────────────────────────────────────
+function drawCloud(c) {
+  const alpha = 0.75 - dnBlend * 0.5;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  const col = lerpColor('#ffffff', '#7090a0', dnBlend);
+  ctx.fillStyle = col;
+  const s = c.scale * Math.min(W, H) * 0.05;
+  ctx.beginPath();
+  ctx.arc(c.x, c.y, s * 1.0, 0, Math.PI * 2);
+  ctx.arc(c.x + s * 0.9, c.y - s * 0.3, s * 0.75, 0, Math.PI * 2);
+  ctx.arc(c.x + s * 1.8, c.y, s * 0.85, 0, Math.PI * 2);
+  ctx.arc(c.x + s * 0.6, c.y + s * 0.25, s * 0.7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawBird(b) {
+  const t = Date.now() * 0.003 + b.phase;
+  const wy = Math.sin(t * 4) * 3;
+  const alpha = 0.6 - dnBlend * 0.4;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = lerpColor('#334455', '#aabbcc', 1 - dnBlend * 0.5);
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(b.x - 8, b.y + wy);
+  ctx.quadraticCurveTo(b.x - 4, b.y + wy - 4, b.x, b.y + wy);
+  ctx.quadraticCurveTo(b.x + 4, b.y + wy - 4, b.x + 8, b.y + wy);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// ─────────────────────────────────────────────
+//  Track
+// ─────────────────────────────────────────────
+function drawTrack() {
+  const railOffset = scrollOffset % 48;
+  const railY = groundY;
+  const railSpread = 18;
+
+  // Rail bed (ballast)
+  const ballastGrad = ctx.createLinearGradient(0, railY - 8, 0, railY + 18);
+  ballastGrad.addColorStop(0, lerpColor('#7a6a58', '#3a2e20', dnBlend));
+  ballastGrad.addColorStop(1, lerpColor('#5a4a38', '#2a1e10', dnBlend));
+  ctx.fillStyle = ballastGrad;
+  ctx.beginPath();
+  ctx.roundRect(0, railY - 8, W, 26, 2);
+  ctx.fill();
+
+  // Ties (wooden sleepers)
+  const tieColor = lerpColor('#6b4a28', '#2a1a08', dnBlend);
+  for (let x = -railOffset; x < W + 48; x += 48) {
+    ctx.fillStyle = tieColor;
+    ctx.fillRect(x - 2, railY - 9, 24, 12);
+    // tie grain
+    ctx.fillStyle = lerpColor('#7a5535', '#301e0a', dnBlend);
+    ctx.fillRect(x - 1, railY - 7, 22, 2);
+  }
+
+  // Rails
+  const railGrad = ctx.createLinearGradient(0, railY - 5, 0, railY + 2);
+  railGrad.addColorStop(0, lerpColor('#c0c0c0', '#505050', dnBlend));
+  railGrad.addColorStop(0.5, lerpColor('#e0e0e0', '#707070', dnBlend));
+  railGrad.addColorStop(1, lerpColor('#888888', '#303030', dnBlend));
+
+  for (const dy of [-railSpread, railSpread]) {
+    ctx.fillStyle = railGrad;
+    ctx.beginPath();
+    ctx.roundRect(0, railY - 5 + dy * 0.18, W, 5, 1);
+    ctx.fill();
+  }
+
+  // Rail shine
+  ctx.fillStyle = `rgba(255,255,255,${0.25 - dnBlend * 0.2})`;
+  for (const dy of [-railSpread, railSpread]) {
+    ctx.fillRect(0, railY - 5 + dy * 0.18, W, 1);
+  }
+}
+
+// ─────────────────────────────────────────────
+//  Locomotive Drawing
+// ─────────────────────────────────────────────
+function drawWheel(x, y, r, angle, big) {
+  ctx.save();
+  ctx.translate(x, y);
+
+  // Wheel shadow
+  ctx.beginPath();
+  ctx.ellipse(2, 3, r, r * 0.3, 0, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.fill();
+
+  // Wheel body
+  const wg = ctx.createRadialGradient(-r*0.3, -r*0.3, 0, 0, 0, r);
+  wg.addColorStop(0, lerpColor('#444444', '#1a1a1a', dnBlend));
+  wg.addColorStop(0.6, lerpColor('#222222', '#0d0d0d', dnBlend));
+  wg.addColorStop(1, lerpColor('#111111', '#080808', dnBlend));
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fillStyle = wg;
+  ctx.fill();
+
+  // Tire rim
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.strokeStyle = lerpColor('#888888', '#404040', dnBlend);
+  ctx.lineWidth = big ? 3 : 2;
+  ctx.stroke();
+
+  // Spokes
+  ctx.save();
+  ctx.rotate(angle);
+  const spokeCount = big ? 8 : 6;
+  for (let i = 0; i < spokeCount; i++) {
+    const a = (i / spokeCount) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a) * r * 0.15, Math.sin(a) * r * 0.15);
+    ctx.lineTo(Math.cos(a) * r * 0.85, Math.sin(a) * r * 0.85);
+    ctx.strokeStyle = lerpColor('#666666', '#303030', dnBlend);
+    ctx.lineWidth = big ? 2.5 : 2;
+    ctx.stroke();
+  }
+
+  // Hub cap
+  const hg = ctx.createRadialGradient(-2,-2,0,0,0,r*0.18);
+  hg.addColorStop(0, lerpColor('#d4a017', '#a07010', dnBlend));
+  hg.addColorStop(1, lerpColor('#8a6800', '#402800', dnBlend));
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.18, 0, Math.PI * 2);
+  ctx.fillStyle = hg;
+  ctx.fill();
+  ctx.restore();
+
+  ctx.restore();
+}
+
+function drawConnectingRod(x1, y1, x2, y2) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const len = Math.sqrt(dx*dx + dy*dy);
+  const angle = Math.atan2(dy, dx);
+  const w = 5;
+
+  ctx.save();
+  ctx.translate(x1, y1);
+  ctx.rotate(angle);
+  ctx.beginPath();
+  ctx.roundRect(0, -w/2, len, w, 2);
+  ctx.fillStyle = lerpColor('#606060', '#282828', dnBlend);
+  ctx.fill();
+  ctx.fillStyle = lerpColor('#808080', '#383838', dnBlend);
+  ctx.beginPath();
+  ctx.arc(0, 0, w*0.55, 0, Math.PI*2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(len, 0, w*0.55, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawLocomotive(tx, ty) {
+  // tx = x of locomotive front (right side), ty = groundY (where wheels touch)
+  const s = Math.min(W, H) / 720; // scale factor
+  const sc = (x) => x * s;
+
+  const LDR = sc(48);  // large drive wheel radius
+  const SPR = sc(28);  // small pilot wheel radius
+
+  // Wheel positions (from front of locomotive going left)
+  const frontX = tx;
+  const pilotW1x = frontX - sc(30);
+  const pilotW2x = frontX - sc(85);
+  const driveW1x = frontX - sc(155);
+  const driveW2x = frontX - sc(215);
+  const driveW3x = frontX - sc(278);
+  const wheelY = ty - LDR;
+
+  // Connecting rod pin positions (offset from wheel center by wheel radius * 0.65)
+  const crOffset = LDR * 0.65;
+  const pin1x = driveW1x + Math.cos(wheelAngle) * crOffset;
+  const pin1y = wheelY + Math.sin(wheelAngle) * crOffset;
+  const pin2x = driveW2x + Math.cos(wheelAngle + 0.2) * crOffset;
+  const pin2y = wheelY + Math.sin(wheelAngle + 0.2) * crOffset;
+  const pin3x = driveW3x + Math.cos(wheelAngle + 0.1) * crOffset;
+  const pin3y = wheelY + Math.sin(wheelAngle + 0.1) * crOffset;
+
+  // Running board / frame
+  const bodyBottom = ty - LDR * 1.55;
+  const boilerBottom = ty - LDR * 1.65;
+  const boilerTop = boilerBottom - sc(75);
+  const cabLeft = frontX - sc(330);
+  const boilerLeft = frontX - sc(295);
+  const smokeboxRight = frontX - sc(30);
+
+  // Main running board
+  ctx.beginPath();
+  ctx.roundRect(cabLeft - sc(10), bodyBottom - sc(8), frontX - cabLeft + sc(10), sc(12), 2);
+  ctx.fillStyle = lerpColor('#2a2a2a', '#0d0d0d', dnBlend);
+  ctx.fill();
+
+  // Smokebox (front, cylindrical)
+  const sbGrad = ctx.createLinearGradient(smokeboxRight - sc(45), 0, smokeboxRight, 0);
+  sbGrad.addColorStop(0, lerpColor('#1a1a1a', '#080808', dnBlend));
+  sbGrad.addColorStop(0.5, lerpColor('#2e2e2e', '#101010', dnBlend));
+  sbGrad.addColorStop(1, lerpColor('#1a1a1a', '#080808', dnBlend));
+  ctx.beginPath();
+  ctx.roundRect(smokeboxRight - sc(48), boilerTop + sc(8), sc(48), boilerBottom - boilerTop - sc(8), [0, sc(8), sc(8), 0]);
+  ctx.fillStyle = sbGrad;
+  ctx.fill();
+
+  // Boiler body
+  const boilerGrad = ctx.createLinearGradient(0, boilerTop, 0, boilerBottom);
+  boilerGrad.addColorStop(0, lerpColor('#3a3a3a', '#161616', dnBlend));
+  boilerGrad.addColorStop(0.3, lerpColor('#2a2a2a', '#0f0f0f', dnBlend));
+  boilerGrad.addColorStop(1, lerpColor('#181818', '#080808', dnBlend));
+  ctx.beginPath();
+  ctx.roundRect(boilerLeft, boilerTop, smokeboxRight - boilerLeft - sc(2), boilerBottom - boilerTop, sc(6));
+  ctx.fillStyle = boilerGrad;
+  ctx.fill();
+
+  // Boiler jacket bands (hoops)
+  ctx.strokeStyle = lerpColor('#404040', '#1a1a1a', dnBlend);
+  ctx.lineWidth = sc(3);
+  for (let i = 1; i <= 4; i++) {
+    const bx = boilerLeft + (smokeboxRight - boilerLeft - sc(2)) * i / 5;
+    ctx.beginPath();
+    ctx.moveTo(bx, boilerTop + sc(4));
+    ctx.lineTo(bx, boilerBottom - sc(4));
+    ctx.stroke();
+  }
+
+  // Connecting rods (draw before wheels so they appear behind)
+  drawConnectingRod(pin1x, pin1y, pin2x, pin2y);
+  drawConnectingRod(pin2x, pin2y, pin3x, pin3y);
+
+  // Piston rod / crosshead
+  const pistonX = driveW1x + Math.cos(wheelAngle) * crOffset * 0.5;
+  const pistonY = driveW1x + sc(50);
+  ctx.beginPath();
+  ctx.moveTo(pin1x, pin1y);
+  ctx.lineTo(driveW1x + sc(60), pin1y);
+  ctx.strokeStyle = lerpColor('#505050', '#202020', dnBlend);
+  ctx.lineWidth = sc(3);
+  ctx.stroke();
+
+  // Wheels (draw in order: back to front)
+  drawWheel(driveW3x, wheelY, LDR, wheelAngle + 0.1, true);
+  drawWheel(driveW2x, wheelY, LDR, wheelAngle + 0.2, true);
+  drawWheel(driveW1x, wheelY, LDR, wheelAngle, true);
+  drawWheel(pilotW2x, ty - SPR, SPR, wheelAngle * 0.8, false);
+  drawWheel(pilotW1x, ty - SPR, SPR, wheelAngle * 0.8, false);
+
+  // Cab body
+  const cabRight = cabLeft + sc(120);
+  const cabTop = boilerTop - sc(38);
+  const cabGrad = ctx.createLinearGradient(cabLeft, 0, cabRight, 0);
+  cabGrad.addColorStop(0, lerpColor('#1a1a1a', '#080808', dnBlend));
+  cabGrad.addColorStop(0.4, lerpColor('#2e2e2e', '#121212', dnBlend));
+  cabGrad.addColorStop(1, lerpColor('#222222', '#0c0c0c', dnBlend));
+  ctx.beginPath();
+  ctx.roundRect(cabLeft, cabTop, cabRight - cabLeft, bodyBottom - cabTop, [sc(4), sc(4), 0, 0]);
+  ctx.fillStyle = cabGrad;
+  ctx.fill();
+
+  // Cab roof overhang
+  ctx.beginPath();
+  ctx.roundRect(cabLeft - sc(8), cabTop - sc(10), cabRight - cabLeft + sc(16), sc(16), sc(4));
+  ctx.fillStyle = lerpColor('#c0392b', '#6a1a18', dnBlend);
+  ctx.fill();
+
+  // Cab windows
+  const winY = cabTop + sc(14);
+  const winH = sc(28);
+  const wins = [[cabLeft + sc(10), sc(28)], [cabLeft + sc(50), sc(28)], [cabLeft + sc(90), sc(20)]];
+  for (const [wx, ww] of wins) {
+    ctx.beginPath();
+    ctx.roundRect(wx, winY, ww, winH, sc(3));
+    const wg = ctx.createLinearGradient(wx, winY, wx, winY + winH);
+    if (isNight || dnBlend > 0.5) {
+      wg.addColorStop(0, 'rgba(255,200,80,0.85)');
+      wg.addColorStop(1, 'rgba(200,120,30,0.7)');
+    } else {
+      wg.addColorStop(0, 'rgba(140,200,255,0.7)');
+      wg.addColorStop(1, 'rgba(80,150,220,0.5)');
+    }
+    ctx.fillStyle = wg;
+    ctx.fill();
+    ctx.strokeStyle = lerpColor('#444444', '#1a1a1a', dnBlend);
+    ctx.lineWidth = sc(1.5);
+    ctx.stroke();
+  }
+
+  // Cab light emission at night
+  if (dnBlend > 0.3) {
+    for (const [wx, ww] of wins) {
+      const glow = ctx.createRadialGradient(wx + ww/2, winY + winH/2, 0, wx + ww/2, winY + winH/2, sc(60));
+      glow.addColorStop(0, `rgba(255,180,50,${0.15 * dnBlend})`);
+      glow.addColorStop(1, 'rgba(255,150,30,0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(wx + ww/2, winY + winH/2, sc(60), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Headlight
+  const hlx = frontX - sc(12), hly = boilerTop + sc(22);
+  ctx.beginPath();
+  ctx.arc(hlx, hly, sc(10), 0, Math.PI * 2);
+  ctx.fillStyle = lerpColor('#ffe080', '#c08020', dnBlend > 0.3 ? 0 : 1 - dnBlend * 3);
+  ctx.fill();
+  ctx.strokeStyle = lerpColor('#888', '#444', dnBlend);
+  ctx.lineWidth = sc(2);
+  ctx.stroke();
+  if (dnBlend > 0.2) {
+    const beam = ctx.createRadialGradient(hlx, hly, 0, hlx + sc(200), hly, sc(260));
+    beam.addColorStop(0, `rgba(255,230,100,${0.25 * dnBlend})`);
+    beam.addColorStop(0.5, `rgba(255,220,80,${0.08 * dnBlend})`);
+    beam.addColorStop(1, 'rgba(255,220,80,0)');
+    ctx.fillStyle = beam;
+    ctx.beginPath();
+    ctx.moveTo(hlx, hly);
+    ctx.arc(hlx, hly, sc(260), -0.35, 0.35);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Cowcatcher
+  ctx.beginPath();
+  ctx.moveTo(frontX - sc(12), bodyBottom);
+  ctx.lineTo(frontX + sc(22), ty);
+  ctx.lineTo(frontX - sc(2), ty);
+  ctx.lineTo(frontX - sc(18), bodyBottom - sc(8));
+  ctx.closePath();
+  ctx.fillStyle = lerpColor('#c0392b', '#6a1a18', dnBlend);
+  ctx.fill();
+  // Cowcatcher bars
+  ctx.strokeStyle = lerpColor('#8a2820', '#3a100c', dnBlend);
+  ctx.lineWidth = sc(2);
+  for (let i = 0; i < 4; i++) {
+    const t2 = i / 3;
+    const bx1 = lerp(frontX - sc(12), frontX + sc(22), t2);
+    const by1 = lerp(bodyBottom, ty, t2);
+    ctx.beginPath();
+    ctx.moveTo(bx1, by1);
+    ctx.lineTo(frontX - sc(12) + t2 * sc(6), bodyBottom);
+    ctx.stroke();
+  }
+
+  // Smokestack
+  const stx = frontX - sc(138), stBottom = boilerTop + sc(2), stTop = stBottom - sc(50);
+  // Stack base (tapered)
+  ctx.beginPath();
+  ctx.moveTo(stx - sc(9), stBottom);
+  ctx.lineTo(stx - sc(12), stBottom - sc(14));
+  ctx.lineTo(stx - sc(8), stTop + sc(12));
+  ctx.lineTo(stx - sc(12), stTop);
+  ctx.lineTo(stx + sc(12), stTop);
+  ctx.lineTo(stx + sc(8), stTop + sc(12));
+  ctx.lineTo(stx + sc(12), stBottom - sc(14));
+  ctx.lineTo(stx + sc(9), stBottom);
+  ctx.closePath();
+  ctx.fillStyle = lerpColor('#1a1a1a', '#080808', dnBlend);
+  ctx.fill();
+  // Stack top (flared)
+  ctx.beginPath();
+  ctx.roundRect(stx - sc(14), stTop - sc(6), sc(28), sc(10), sc(3));
+  ctx.fillStyle = lerpColor('#222222', '#0c0c0c', dnBlend);
+  ctx.fill();
+
+  // Steam dome
+  const sdx = frontX - sc(196), sdBottom = boilerTop + sc(2);
+  ctx.beginPath();
+  ctx.ellipse(sdx, sdBottom - sc(12), sc(16), sc(18), 0, Math.PI, 0);
+  ctx.lineTo(sdx + sc(16), sdBottom - sc(2));
+  ctx.lineTo(sdx - sc(16), sdBottom - sc(2));
+  ctx.closePath();
+  ctx.fillStyle = lerpColor('#2a2a2a', '#101010', dnBlend);
+  ctx.fill();
+
+  // Bell
+  const bellx = frontX - sc(167), belly = boilerTop - sc(2);
+  ctx.beginPath();
+  ctx.ellipse(bellx, belly, sc(7), sc(10), 0, Math.PI, 0);
+  ctx.fillStyle = lerpColor('#d4a017', '#7a5a0a', dnBlend);
+  ctx.fill();
+
+  // Red decorative stripe on boiler
+  ctx.beginPath();
+  ctx.roundRect(boilerLeft + sc(2), boilerBottom - sc(10), smokeboxRight - boilerLeft - sc(4), sc(6), 1);
+  ctx.fillStyle = lerpColor('#c0392b', '#6a1a18', dnBlend);
+  ctx.fill();
+
+  // Brass fittings
+  const fittings = [
+    [frontX - sc(100), boilerTop + sc(5)],
+    [frontX - sc(220), boilerTop + sc(5)],
+    [frontX - sc(260), boilerTop + sc(5)],
+  ];
+  for (const [fx, fy] of fittings) {
+    ctx.beginPath();
+    ctx.arc(fx, fy, sc(4), 0, Math.PI * 2);
+    ctx.fillStyle = lerpColor('#d4a017', '#7a5a0a', dnBlend);
+    ctx.fill();
+  }
+
+  // Smoke pipe outlet glow
+  if (speed > 0.5) {
+    const sg = ctx.createRadialGradient(stx, stTop - sc(20), 0, stx, stTop - sc(20), sc(30));
+    sg.addColorStop(0, `rgba(255,100,20,${Math.min(speed / 10 * 0.5, 0.4)})`);
+    sg.addColorStop(1, 'rgba(255,80,10,0)');
+    ctx.fillStyle = sg;
+    ctx.beginPath();
+    ctx.arc(stx, stTop - sc(20), sc(30), 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  return { stackX: stx, stackY: stTop, s };
+}
+
+function drawTender(tx, ty) {
+  const s = Math.min(W, H) / 720;
+  const sc = (x) => x * s;
+  const LDR = sc(48);
+  const TWR = sc(22); // tender wheel radius
+
+  const tenderLeft = tx - sc(175);
+  const tenderRight = tx;
+  const tenderTop = ty - LDR * 1.5;
+  const tenderBottom = ty - LDR * 0.85;
+
+  // Tender wheel positions
+  const tw1 = tenderLeft + sc(25);
+  const tw2 = tenderLeft + sc(72);
+  const tw3 = tenderLeft + sc(119);
+  const tw4 = tenderLeft + sc(152);
+  const twy = ty - TWR;
+
+  // Tender body
+  const tg = ctx.createLinearGradient(tenderLeft, tenderTop, tenderLeft, tenderBottom);
+  tg.addColorStop(0, lerpColor('#2a2a2a', '#101010', dnBlend));
+  tg.addColorStop(1, lerpColor('#1a1a1a', '#080808', dnBlend));
+  ctx.beginPath();
+  ctx.roundRect(tenderLeft, tenderTop, tenderRight - tenderLeft, tenderBottom - tenderTop, sc(4));
+  ctx.fillStyle = tg;
+  ctx.fill();
+
+  // Coal / wood in tender
+  const coalY = tenderTop + sc(8);
+  ctx.beginPath();
+  ctx.roundRect(tenderLeft + sc(4), coalY, tenderRight - tenderLeft - sc(8), sc(32), sc(3));
+  const cg = ctx.createLinearGradient(0, coalY, 0, coalY + sc(32));
+  cg.addColorStop(0, lerpColor('#2a2a2a', '#121212', dnBlend));
+  cg.addColorStop(0.5, lerpColor('#1a1510', '#0a0806', dnBlend));
+  cg.addColorStop(1, lerpColor('#0d0d0d', '#050505', dnBlend));
+  ctx.fillStyle = cg;
+  ctx.fill();
+
+  // Coal lumps
+  for (let i = 0; i < 8; i++) {
+    const lx = tenderLeft + sc(12) + i * sc(18);
+    const ly = coalY + sc(6) + (i % 2) * sc(4);
+    ctx.beginPath();
+    ctx.ellipse(lx, ly, sc(7), sc(5), Math.sin(i) * 0.5, 0, Math.PI * 2);
+    ctx.fillStyle = lerpColor('#333333', '#151515', dnBlend);
+    ctx.fill();
+  }
+
+  // Red decorative stripe
+  ctx.beginPath();
+  ctx.roundRect(tenderLeft + sc(2), tenderBottom - sc(8), tenderRight - tenderLeft - sc(4), sc(5), 1);
+  ctx.fillStyle = lerpColor('#c0392b', '#6a1a18', dnBlend);
+  ctx.fill();
+
+  // Tender wheels
+  for (const wx of [tw1, tw2, tw3, tw4]) {
+    drawWheel(wx, twy, TWR, wheelAngle * 0.7, false);
+  }
+}
+
+function drawPassengerCar(tx, ty, idx) {
+  const s = Math.min(W, H) / 720;
+  const sc = (x) => x * s;
+  const TWR = sc(20);
+  const carLeft = tx - sc(200);
+  const carRight = tx;
+  const carTop = ty - TWR * 4.2;
+  const carBottom = ty - TWR * 1.4;
+
+  const colors = [
+    { body: '#8B4513', stripe: '#c0392b', roof: '#5c2d0a' },
+    { body: '#4a3a7a', stripe: '#8055c0', roof: '#2a1f4a' },
+  ];
+  const col = colors[idx % colors.length];
+
+  // Car shadow
+  ctx.beginPath();
+  ctx.ellipse(tx - sc(100), ty + sc(3), sc(95), sc(5), 0, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.fill();
+
+  // Car body
+  const bg = ctx.createLinearGradient(carLeft, carTop, carLeft, carBottom);
+  bg.addColorStop(0, lerpColor(col.body, col.roof, dnBlend * 0.8));
+  bg.addColorStop(0.6, lerpColor(col.body, '#1a1010', dnBlend));
+  bg.addColorStop(1, lerpColor('#5a3010', '#1a0e08', dnBlend));
+  ctx.beginPath();
+  ctx.roundRect(carLeft, carTop, carRight - carLeft, carBottom - carTop, sc(5));
+  ctx.fillStyle = bg;
+  ctx.fill();
+
+  // Roof
+  const rg = ctx.createLinearGradient(0, carTop - sc(12), 0, carTop);
+  rg.addColorStop(0, lerpColor('#7a6a5a', '#2a2018', dnBlend));
+  rg.addColorStop(1, lerpColor('#5a4a3a', '#1a1208', dnBlend));
+  ctx.beginPath();
+  ctx.roundRect(carLeft - sc(4), carTop - sc(12), carRight - carLeft + sc(8), sc(14), [sc(4), sc(4), 0, 0]);
+  ctx.fillStyle = rg;
+  ctx.fill();
+
+  // Windows
+  const winCount = 5;
+  const winW = sc(22), winH = sc(20);
+  const winY = carTop + (carBottom - carTop) * 0.22;
+  const winSpacing = (carRight - carLeft - sc(40)) / (winCount - 1);
+  for (let i = 0; i < winCount; i++) {
+    const wx = carLeft + sc(20) + i * winSpacing;
+    ctx.beginPath();
+    ctx.roundRect(wx, winY, winW, winH, sc(3));
+    if (dnBlend > 0.3) {
+      const wg = ctx.createLinearGradient(wx, winY, wx, winY + winH);
+      wg.addColorStop(0, `rgba(255,200,80,${0.7 * dnBlend + 0.2})`);
+      wg.addColorStop(1, `rgba(200,100,20,${0.5 * dnBlend + 0.15})`);
+      ctx.fillStyle = wg;
+    } else {
+      const wg = ctx.createLinearGradient(wx, winY, wx, winY + winH);
+      wg.addColorStop(0, 'rgba(160,220,255,0.7)');
+      wg.addColorStop(1, 'rgba(80,160,220,0.45)');
+      ctx.fillStyle = wg;
+    }
+    ctx.fill();
+    ctx.strokeStyle = lerpColor('#3a2010', '#180c04', dnBlend);
+    ctx.lineWidth = sc(1.5);
+    ctx.stroke();
+  }
+
+  // Night window glow
+  if (dnBlend > 0.25) {
+    for (let i = 0; i < winCount; i++) {
+      const wx = carLeft + sc(20) + i * winSpacing + winW / 2;
+      const wy = winY + winH / 2;
+      const gl = ctx.createRadialGradient(wx, wy, 0, wx, wy, sc(50));
+      gl.addColorStop(0, `rgba(255,160,40,${0.12 * dnBlend})`);
+      gl.addColorStop(1, 'rgba(255,120,20,0)');
+      ctx.fillStyle = gl;
+      ctx.beginPath();
+      ctx.arc(wx, wy, sc(50), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Decorative stripe
+  ctx.beginPath();
+  ctx.fillStyle = lerpColor(col.stripe, '#3a0808', dnBlend);
+  ctx.fillRect(carLeft + sc(2), carBottom - sc(10), carRight - carLeft - sc(4), sc(4));
+
+  // Coupling
+  ctx.fillStyle = lerpColor('#888888', '#383838', dnBlend);
+  ctx.fillRect(carRight, carBottom - sc(8), sc(10), sc(4));
+  ctx.fillRect(carLeft - sc(10), carBottom - sc(8), sc(10), sc(4));
+
+  // Wheels
+  const wpositions = [carLeft + sc(22), carLeft + sc(55), carRight - sc(55), carRight - sc(22)];
+  for (const wx of wpositions) {
+    drawWheel(wx, ty - TWR, TWR, wheelAngle * 0.6, false);
+  }
+}
+
+// ─────────────────────────────────────────────
+//  Smoke Particles
+// ─────────────────────────────────────────────
+function emitSmoke(sx, sy, s) {
+  const sc = (x) => x * s;
+  if (speed < 0.1) return;
+  if (Math.random() < 0.4) {
+    particles.push({
+      x: sx + (Math.random() - 0.5) * sc(6),
+      y: sy,
+      vx: -(speed * 0.3) - Math.random() * 0.8,
+      vy: -(1.5 + Math.random() * 1.5) * (speed / 5 + 0.3),
+      life: 1.0,
+      decay: 0.008 + Math.random() * 0.008,
+      size: sc(8 + Math.random() * 8),
+      gray: 120 + Math.floor(Math.random() * 60),
+    });
+  }
+}
+
+function emitWhistle(sx, sy, s) {
+  for (let i = 0; i < 8; i++) {
+    steamParticles.push({
+      x: sx,
+      y: sy,
+      vx: (Math.random() - 0.5) * 2,
+      vy: -(3 + Math.random() * 3),
+      life: 1.0,
+      decay: 0.025,
+      size: s * Math.min(W, H) / 720 * (5 + Math.random() * 5),
+    });
+  }
+}
+
+function updateParticles() {
+  for (const p of particles) {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy *= 0.98;
+    p.vx -= speed * 0.04;
+    p.size *= 1.012;
+    p.life -= p.decay;
+  }
+  for (const p of steamParticles) {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy *= 0.95;
+    p.size *= 1.05;
+    p.life -= p.decay;
+  }
+  // Remove dead
+  for (let i = particles.length - 1; i >= 0; i--) {
+    if (particles[i].life <= 0) particles.splice(i, 1);
+  }
+  for (let i = steamParticles.length - 1; i >= 0; i--) {
+    if (steamParticles[i].life <= 0) steamParticles.splice(i, 1);
+  }
+}
+
+function drawParticles() {
+  for (const p of particles) {
+    const a = p.life * 0.55 * (isNight ? 1.2 : 0.9);
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${p.gray},${p.gray},${p.gray},${a})`;
+    ctx.fill();
+  }
+  for (const p of steamParticles) {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(220,230,255,${p.life * 0.7})`;
+    ctx.fill();
+  }
+}
+
+// ─────────────────────────────────────────────
+//  Stats
+// ─────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const res = await fetch('/api/stats');
+    const d = await res.json();
+    document.getElementById('stat-journeys').textContent = d.total_journeys.toLocaleString();
+    document.getElementById('stat-distance').textContent = d.total_distance.toLocaleString() + ' mi';
+    document.getElementById('stat-passengers').textContent = d.total_passengers.toLocaleString();
+    document.getElementById('stat-longest').textContent = d.longest_journey.toLocaleString() + ' mi';
+  } catch(e) {}
+}
+
+let lastSave = 0;
+let passengers = Math.floor(Math.random() * 80) + 40;
+
+async function saveJourney() {
+  if (journeyMiles < 1) return;
+  try {
+    await fetch('/api/journey', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ distance: journeyMiles, passengers })
+    });
+    journeyMiles = 0;
+    passengers = Math.floor(Math.random() * 80) + 40;
+    loadStats();
+  } catch(e) {}
+}
+
+// ─────────────────────────────────────────────
+//  Main Loop
+// ─────────────────────────────────────────────
+let lastTime = 0;
+let whistleEffect = 0;
+
+function frame(now) {
+  const dt = Math.min((now - lastTime) / 1000, 0.05);
+  lastTime = now;
+
+  // Update scroll
+  const pixelsPerFrame = speed * 2.8;
+  scrollOffset += pixelsPerFrame;
+  wheelAngle += speed * 0.025;
+  journeyMiles += speed * dt * 0.012;
+
+  // Day/night blend
+  dnBlend += (targetDN - dnBlend) * 0.015;
+  if (Math.abs(dnBlend - targetDN) < 0.001) dnBlend = targetDN;
+
+  // Whistle
+  if (whistleTimer > 0) {
+    whistleTimer -= dt;
+    whistleEffect = Math.sin(Date.now() * 0.05) * 2;
+  } else {
+    whistleEffect = 0;
+  }
+
+  // Update clouds
+  for (const c of clouds) {
+    c.x -= c.speed * (speed * 0.15 + 0.2);
+    if (c.x < -300) {
+      c.x = W + 200;
+      c.y = horizonY * 0.12 + Math.random() * horizonY * 0.45;
+    }
+  }
+
+  // Update birds
+  for (const b of birds) {
+    b.x -= b.speed * (speed * 0.08 + 0.3);
+    if (b.x < -50) {
+      b.x = W + 50;
+      b.y = horizonY * 0.2 + Math.random() * horizonY * 0.5;
+    }
+  }
+
+  // Spawn/recycle trees
+  for (const t of trees) {
+    const scrollFactor = t.layer === 1 ? 0.3 : 0.85;
+    const tx = ((t.x - scrollOffset * scrollFactor) % (W * 3) + W * 3) % (W * 3) - W * 0.5;
+    if (tx < -150) {
+      t.x += W * 3;
+    }
+  }
+
+  // Update particles
+  updateParticles();
+
+  // ── Draw ──────────────────────────────────
+  ctx.clearRect(0, 0, W, H);
+
+  drawSky();
+  drawStars();
+  drawSun();
+
+  // Clouds (behind mountains)
+  for (const c of clouds) drawCloud(c);
+
+  drawMountains();
+  drawHills();
+
+  // Trees (far layer)
+  for (const t of trees.filter(x => x.layer === 1)) drawTree(t);
+
+  // Trees (near layer, behind ground)
+  for (const t of trees.filter(x => x.layer === 2)) drawTree(t);
+
+  drawGround();
+  drawTrack();
+
+  // Train
+  const trainX = W * 0.70;
+  const locResult = drawLocomotive(trainX, groundY);
+  if (locResult) {
+    const { stackX, stackY, s } = locResult;
+    drawTender(trainX - Math.min(W, H) / 720 * 340, groundY);
+    drawPassengerCar(trainX - Math.min(W, H) / 720 * 530, groundY, 0);
+    drawPassengerCar(trainX - Math.min(W, H) / 720 * 745, groundY, 1);
+    emitSmoke(stackX, stackY, s);
+  }
+
+  drawParticles();
+
+  // Birds (in front of everything)
+  for (const b of birds) drawBird(b);
+
+  // Fog/vignette
+  const vign = ctx.createRadialGradient(W/2, H/2, H*0.3, W/2, H/2, H*0.85);
+  vign.addColorStop(0, 'rgba(0,0,0,0)');
+  vign.addColorStop(1, 'rgba(0,0,0,0.35)');
+  ctx.fillStyle = vign;
+  ctx.fillRect(0, 0, W, H);
+
+  // Night overlay
+  if (dnBlend > 0) {
+    ctx.fillStyle = `rgba(5,8,20,${dnBlend * 0.3})`;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Update UI text
+  const mph = Math.round(speed * 14);
+  document.getElementById('mph-display').textContent = mph;
+  const mi = journeyMiles.toFixed(1);
+  document.getElementById('stat-current').textContent = `${mi} mi`;
+
+  // Periodic journey save
+  if (journeyMiles - lastSave >= 50) {
+    lastSave = journeyMiles;
+    saveJourney();
+  }
+
+  requestAnimationFrame(frame);
+}
+
+// ─────────────────────────────────────────────
+//  Controls
+// ─────────────────────────────────────────────
+const speedSlider = document.getElementById('speed-slider');
+const speedDisplay = document.getElementById('speed-display');
+
+speedSlider.addEventListener('input', () => {
+  speed = parseFloat(speedSlider.value);
+  speedDisplay.textContent = speed;
+});
+
+document.getElementById('btn-night').addEventListener('click', function() {
+  isNight = !isNight;
+  targetDN = isNight ? 1 : 0;
+  this.textContent = isNight ? '☀️ Day' : '🌙 Night';
+  this.classList.toggle('active', isNight);
+});
+
+document.getElementById('btn-whistle').addEventListener('click', function() {
+  whistleTimer = 1.2;
+  const trainX = W * 0.70;
+  const s = Math.min(W, H) / 720;
+  const sc = (x) => x * s;
+  const stackX = trainX - sc(138);
+  const stackY = groundY - sc(48 * 1.65) - sc(92);
+  emitWhistle(stackX, stackY, 1);
+  // Quick flash
+  const fl = document.getElementById('whistle-flash');
+  fl.style.background = 'rgba(255,255,255,0.04)';
+  setTimeout(() => fl.style.background = 'rgba(255,255,255,0)', 120);
+});
+
+document.getElementById('btn-stop').addEventListener('click', () => {
+  speed = 0;
+  speedSlider.value = '0';
+  speedDisplay.textContent = '0';
+});
+
+document.getElementById('btn-full').addEventListener('click', () => {
+  speed = 10;
+  speedSlider.value = '10';
+  speedDisplay.textContent = '10';
+});
+
+// Keyboard shortcuts
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowUp' || e.key === '+') {
+    speed = Math.min(10, speed + 0.5);
+    speedSlider.value = speed;
+    speedDisplay.textContent = speed;
+  } else if (e.key === 'ArrowDown' || e.key === '-') {
+    speed = Math.max(0, speed - 0.5);
+    speedSlider.value = speed;
+    speedDisplay.textContent = speed;
+  } else if (e.key === ' ') {
+    e.preventDefault();
+    document.getElementById('btn-whistle').click();
+  } else if (e.key === 'n' || e.key === 'N') {
+    document.getElementById('btn-night').click();
+  }
+});
+
+// ─────────────────────────────────────────────
+//  Start
+// ─────────────────────────────────────────────
+init();
+loadStats();
+setInterval(loadStats, 30000);
+requestAnimationFrame(t => { lastTime = t; requestAnimationFrame(frame); });
+</script>
+</body>
+</html>
